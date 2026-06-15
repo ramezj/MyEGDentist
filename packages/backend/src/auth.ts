@@ -6,8 +6,7 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  // Allow requests from the frontend development server
-  trustedOrigins: ["http://localhost:5173"],
+  trustedOrigins: [process.env.APP_URL || "http://localhost:3000"],
   emailAndPassword: {
     enabled: true,
   },
