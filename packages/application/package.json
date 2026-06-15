@@ -1,0 +1,16 @@
+{
+  "name": "@myegdentist/application",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "dependencies": {
+    "@myegdentist/backend": "*",
+    "@myegdentist/frontend": "*",
+    "@myegdentist/types": "*"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"No tests configured for application package\" && exit 0"
+  },
+  "description": "Application orchestration package for the MyEGDentist monorepo."
+}

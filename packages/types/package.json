@@ -1,0 +1,10 @@
+{
+  "name": "@myegdentist/types",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "description": "Shared type and contract definitions for the monorepo.",
+  "scripts": {
+    "test": "echo \"No tests configured for types package\" && exit 0"
+  }
+}
