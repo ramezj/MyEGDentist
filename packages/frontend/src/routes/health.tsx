@@ -10,7 +10,7 @@ function HealthPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["health"],
     queryFn: async () => {
-      const response = await apiClient.api.health.$get();
+      const response = await apiClient.health.$get();
       return response.json();
     },
   });
