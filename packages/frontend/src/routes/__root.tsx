@@ -27,7 +27,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'My EG Dentist',
+      },
+      {
+        name: 'description',
+        content:
+          'My EG Dentist helps international patients plan dental treatment trips to Egypt with clear support from consultation to recovery.',
       },
     ],
     links: [
