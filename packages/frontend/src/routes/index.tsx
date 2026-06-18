@@ -1,17 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from '@tanstack/react-router'
+import { HomePage } from '../components/home-page'
 
-export const Route = createFileRoute("/")({ component: Home });
-
-function Home() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["home"],
-    queryFn: async () => {},
-  });
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  return <div className="p-8">{JSON.stringify(data)}</div>;
-}
+export const Route = createFileRoute('/')({
+  component: HomePage,
+})
