@@ -6,9 +6,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:backend": "npm run dev -w @myegdentist/backend",
-    "dev:frontend": "npm run dev -w @myegdentist/frontend",
-    "test": "npm run test --workspaces --if-present"
+    "dev:api": "npm run dev -w @myegdentist/api",
+    "dev:web": "npm run dev -w @myegdentist/web",
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "npm run db:migrate -w @myegdentist/api",
+    "db:generate": "npm run db:generate -w @myegdentist/api",
+    "db:studio": "npm run db:studio -w @myegdentist/api",
+    "ui:add": "npx shadcn@latest add -c packages/web"
   },
   "keywords": [],
   "author": "",
