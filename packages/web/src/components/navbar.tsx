@@ -15,7 +15,21 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <span className="text-sm text-muted-foreground">{user.name}</span>
+              {user.type === "dentist" && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/dentist">Dashboard</Link>
+                </Button>
+              )}
+              {user.type === "tourist" && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/dentist">Dashboard</Link>
+                </Button>
+              )}
+              {user.type === "agency" && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/dentist">Dashboard</Link>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
