@@ -12,11 +12,10 @@ datasource db {
   provider = "postgresql"
 }
 
-enum UserRole {
+enum UserType {
   tourist
   agency
   dentist
-  superadmin
 }
 
 model User {
@@ -25,7 +24,8 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
-  role          UserRole  @default(tourist)
+  type          UserType  @default(tourist)
+  onboarding    Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions       Session[]

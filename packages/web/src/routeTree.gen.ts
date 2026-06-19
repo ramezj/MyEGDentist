@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as DentistSignupRouteImport } from './routes/dentist-signup'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
+import { Route as marketingRouteRouteImport } from './routes/(marketing)/route'
+import { Route as marketingIndexRouteImport } from './routes/(marketing)/index'
+import { Route as ProtectedDentistIndexRouteImport } from './routes/_protected/dentist/index'
 
 const HealthRoute = HealthRouteImport.update({
   id: '/health',
@@ -29,41 +32,68 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
+  id: '/_protected',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const marketingRouteRoute = marketingRouteRouteImport.update({
+  id: '/(marketing)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const marketingIndexRoute = marketingIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => marketingRouteRoute,
+} as any)
+const ProtectedDentistIndexRoute = ProtectedDentistIndexRouteImport.update({
+  id: '/dentist/',
+  path: '/dentist/',
+  getParentRoute: () => ProtectedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof marketingIndexRoute
   '/auth': typeof AuthRoute
   '/dentist-signup': typeof DentistSignupRoute
   '/health': typeof HealthRoute
+  '/dentist/': typeof ProtectedDentistIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/': typeof marketingIndexRoute
   '/auth': typeof AuthRoute
   '/dentist-signup': typeof DentistSignupRoute
   '/health': typeof HealthRoute
+  '/dentist': typeof ProtectedDentistIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/(marketing)': typeof marketingRouteRouteWithChildren
+  '/_protected': typeof ProtectedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/dentist-signup': typeof DentistSignupRoute
   '/health': typeof HealthRoute
+  '/(marketing)/': typeof marketingIndexRoute
+  '/_protected/dentist/': typeof ProtectedDentistIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dentist-signup' | '/health'
+  fullPaths: '/' | '/auth' | '/dentist-signup' | '/health' | '/dentist/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dentist-signup' | '/health'
-  id: '__root__' | '/' | '/auth' | '/dentist-signup' | '/health'
+  to: '/' | '/auth' | '/dentist-signup' | '/health' | '/dentist'
+  id:
+    | '__root__'
+    | '/(marketing)'
+    | '/_protected'
+    | '/auth'
+    | '/dentist-signup'
+    | '/health'
+    | '/(marketing)/'
+    | '/_protected/dentist/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  marketingRouteRoute: typeof marketingRouteRouteWithChildren
+  ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   DentistSignupRoute: typeof DentistSignupRoute
   HealthRoute: typeof HealthRoute
@@ -92,18 +122,64 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(marketing)': {
+      id: '/(marketing)'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof marketingRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(marketing)/': {
+      id: '/(marketing)/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof marketingIndexRouteImport
+      parentRoute: typeof marketingRouteRoute
+    }
+    '/_protected/dentist/': {
+      id: '/_protected/dentist/'
+      path: '/dentist'
+      fullPath: '/dentist/'
+      preLoaderRoute: typeof ProtectedDentistIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
   }
 }
 
+interface marketingRouteRouteChildren {
+  marketingIndexRoute: typeof marketingIndexRoute
+}
+
+const marketingRouteRouteChildren: marketingRouteRouteChildren = {
+  marketingIndexRoute: marketingIndexRoute,
+}
+
+const marketingRouteRouteWithChildren = marketingRouteRoute._addFileChildren(
+  marketingRouteRouteChildren,
+)
+
+interface ProtectedRouteRouteChildren {
+  ProtectedDentistIndexRoute: typeof ProtectedDentistIndexRoute
+}
+
+const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
+  ProtectedDentistIndexRoute: ProtectedDentistIndexRoute,
+}
+
+const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
+  ProtectedRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  marketingRouteRoute: marketingRouteRouteWithChildren,
+  ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   DentistSignupRoute: DentistSignupRoute,
   HealthRoute: HealthRoute,

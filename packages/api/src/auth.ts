@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./core/lib/prisma.js";
-import { UserRole } from "./core/lib/roles.js";
+import { UserType } from "./core/lib/roles.js";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -13,10 +13,15 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      role: {
-        type: Object.values(UserRole) as [UserRole, ...UserRole[]],
-        defaultValue: UserRole.tourist,
-        input: false,
+      type: {
+        type: Object.values(UserType) as [UserType, ...UserType[]],
+        defaultValue: UserType.tourist,
+        input: true,
+      },
+      onboarding: {
+        type: "boolean",
+        defaultValue: false,
+        input: true,
       },
     },
   },

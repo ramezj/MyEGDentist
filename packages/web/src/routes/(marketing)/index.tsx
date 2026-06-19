@@ -5,7 +5,7 @@ import { Search } from 'lucide-react'
 import { Input } from '#/components/ui/input'
 import { Button } from '#/components/ui/button'
 import { apiClient } from '#/lib/api-client'
-export const Route = createFileRoute('/')({ component: Home })
+export const Route = createFileRoute('/(marketing)/')({ component: Home })
 
 function Home() {
   const [input, setInput] = useState('')
