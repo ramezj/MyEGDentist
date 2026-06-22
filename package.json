@@ -9,6 +9,8 @@
     "dev:api": "npm run dev -w @myegdentist/api",
     "dev:web": "npm run dev -w @myegdentist/web",
     "build": "npm run db:generate && npm run build -w @myegdentist/api && npm run build -w @myegdentist/web",
+    "build:web": "npm run build -w @myegdentist/web",
+    "build:api": "npm run db:generate && npm run build -w @myegdentist/api",
     "start:api": "npm run start -w @myegdentist/api",
     "start:web": "npm run start -w @myegdentist/web",
     "test": "npm run test --workspaces --if-present",
