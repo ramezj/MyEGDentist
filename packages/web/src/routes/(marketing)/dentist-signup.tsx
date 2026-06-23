@@ -4,7 +4,7 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { authClient } from "#/lib/auth-client";
 
-export const Route = createFileRoute("/dentist-signup")({
+export const Route = createFileRoute("/(marketing)/dentist-signup")({
   component: DentistSignupPage,
 });
 
@@ -40,7 +40,7 @@ function DentistSignupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background py-12 px-4">
+    <main className="bg-background py-12 px-4">
       <div className="max-w-lg mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight mb-2">

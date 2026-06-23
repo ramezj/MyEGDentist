@@ -10,22 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as HealthRouteImport } from './routes/health'
-import { Route as DentistSignupRouteImport } from './routes/dentist-signup'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DentistRouteRouteImport } from './routes/dentist/route'
 import { Route as marketingRouteRouteImport } from './routes/(marketing)/route'
 import { Route as DentistIndexRouteImport } from './routes/dentist/index'
 import { Route as marketingIndexRouteImport } from './routes/(marketing)/index'
 import { Route as DentistOnboardingRouteImport } from './routes/dentist/onboarding'
+import { Route as marketingDentistSignupRouteImport } from './routes/(marketing)/dentist-signup'
 
 const HealthRoute = HealthRouteImport.update({
   id: '/health',
   path: '/health',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DentistSignupRoute = DentistSignupRouteImport.update({
-  id: '/dentist-signup',
-  path: '/dentist-signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -57,20 +52,25 @@ const DentistOnboardingRoute = DentistOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => DentistRouteRoute,
 } as any)
+const marketingDentistSignupRoute = marketingDentistSignupRouteImport.update({
+  id: '/dentist-signup',
+  path: '/dentist-signup',
+  getParentRoute: () => marketingRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/dentist': typeof DentistRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/dentist-signup': typeof DentistSignupRoute
   '/health': typeof HealthRoute
+  '/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
   '/': typeof marketingIndexRoute
   '/dentist/': typeof DentistIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
-  '/dentist-signup': typeof DentistSignupRoute
   '/health': typeof HealthRoute
+  '/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
   '/': typeof marketingIndexRoute
   '/dentist': typeof DentistIndexRoute
@@ -80,8 +80,8 @@ export interface FileRoutesById {
   '/(marketing)': typeof marketingRouteRouteWithChildren
   '/dentist': typeof DentistRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/dentist-signup': typeof DentistSignupRoute
   '/health': typeof HealthRoute
+  '/(marketing)/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
   '/(marketing)/': typeof marketingIndexRoute
   '/dentist/': typeof DentistIndexRoute
@@ -91,16 +91,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/dentist'
     | '/auth'
-    | '/dentist-signup'
     | '/health'
+    | '/dentist-signup'
     | '/dentist/onboarding'
     | '/'
     | '/dentist/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
-    | '/dentist-signup'
     | '/health'
+    | '/dentist-signup'
     | '/dentist/onboarding'
     | '/'
     | '/dentist'
@@ -109,8 +109,8 @@ export interface FileRouteTypes {
     | '/(marketing)'
     | '/dentist'
     | '/auth'
-    | '/dentist-signup'
     | '/health'
+    | '/(marketing)/dentist-signup'
     | '/dentist/onboarding'
     | '/(marketing)/'
     | '/dentist/'
@@ -120,7 +120,6 @@ export interface RootRouteChildren {
   marketingRouteRoute: typeof marketingRouteRouteWithChildren
   DentistRouteRoute: typeof DentistRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  DentistSignupRoute: typeof DentistSignupRoute
   HealthRoute: typeof HealthRoute
 }
 
@@ -131,13 +130,6 @@ declare module '@tanstack/react-router' {
       path: '/health'
       fullPath: '/health'
       preLoaderRoute: typeof HealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dentist-signup': {
-      id: '/dentist-signup'
-      path: '/dentist-signup'
-      fullPath: '/dentist-signup'
-      preLoaderRoute: typeof DentistSignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -182,14 +174,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DentistOnboardingRouteImport
       parentRoute: typeof DentistRouteRoute
     }
+    '/(marketing)/dentist-signup': {
+      id: '/(marketing)/dentist-signup'
+      path: '/dentist-signup'
+      fullPath: '/dentist-signup'
+      preLoaderRoute: typeof marketingDentistSignupRouteImport
+      parentRoute: typeof marketingRouteRoute
+    }
   }
 }
 
 interface marketingRouteRouteChildren {
+  marketingDentistSignupRoute: typeof marketingDentistSignupRoute
   marketingIndexRoute: typeof marketingIndexRoute
 }
 
 const marketingRouteRouteChildren: marketingRouteRouteChildren = {
+  marketingDentistSignupRoute: marketingDentistSignupRoute,
   marketingIndexRoute: marketingIndexRoute,
 }
 
@@ -215,7 +216,6 @@ const rootRouteChildren: RootRouteChildren = {
   marketingRouteRoute: marketingRouteRouteWithChildren,
   DentistRouteRoute: DentistRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  DentistSignupRoute: DentistSignupRoute,
   HealthRoute: HealthRoute,
 }
 export const routeTree = rootRouteImport

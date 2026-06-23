@@ -35,18 +35,27 @@ export function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => void authClient.signOut({ fetchOptions: { onSuccess: () => queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey }) } })}
+                onClick={() =>
+                  void authClient.signOut({
+                    fetchOptions: {
+                      onSuccess: () =>
+                        queryClient.invalidateQueries({
+                          queryKey: sessionQuery.queryKey,
+                        }),
+                    },
+                  })
+                }
               >
                 Sign out
               </Button>
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="default" asChild>
                 <Link to="/auth">Sign in</Link>
               </Button>
-              <Button size="sm" asChild>
-                <Link to="/dentist-signup">Register as a Dentist</Link>
+              <Button variant="outline" asChild>
+                <Link to="/dentist-signup">Dentist Portal</Link>
               </Button>
             </>
           )}
