@@ -11,7 +11,7 @@ const getApiHeaders = createIsomorphicFn()
   });
 
 export const apiClient = hc<AppType>(
-  (import.meta.env.VITE_SERVER_URL || "http://localhost:8080") + "/api",
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8080/api",
   {
     headers: getApiHeaders,
     init: { credentials: "include" },
