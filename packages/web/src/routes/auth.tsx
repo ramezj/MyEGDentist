@@ -7,7 +7,8 @@ import { authClient } from "#/lib/auth-client";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Plane, Building2, Stethoscope } from "lucide-react";
+import { cn } from "#/lib/utils";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -30,7 +31,6 @@ type SignUpValues = z.infer<typeof signUpSchema>;
 function SignInForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const {
     register,
     handleSubmit,
@@ -125,9 +125,31 @@ function SignInForm() {
   );
 }
 
+const USER_TYPES = [
+  {
+    value: "tourist" as const,
+    label: "Tourist",
+    icon: Plane,
+    desc: "I'm looking for dental care",
+  },
+  {
+    value: "agency" as const,
+    label: "Agency",
+    icon: Building2,
+    desc: "I connect tourists with clinics",
+  },
+  {
+    value: "dentist" as const,
+    label: "Dentist",
+    icon: Stethoscope,
+    desc: "I provide dental services",
+  },
+];
+
 function SignUpForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [userType, setUserType] = useState<"tourist" | "agency" | "dentist">("tourist");
   const {
     register,
     handleSubmit,
@@ -136,16 +158,42 @@ function SignUpForm() {
   } = useForm<SignUpValues>({ resolver: zodResolver(signUpSchema) });
 
   async function onSubmit(values: SignUpValues) {
-    const { error } = await authClient.signUp.email(values);
+    const { error } = await authClient.signUp.email({
+      ...values,
+      type: userType,
+    });
     if (error) {
       setError("root", { message: error.message ?? "Sign up failed" });
       return;
     }
-    router.navigate({ to: "/" });
+    router.navigate({ to: userType === "dentist" ? "/dentist" : "/" });
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      {/* User type selector */}
+      <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-3 gap-2">
+          {USER_TYPES.map(({ value, label, icon: Icon, desc }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setUserType(value)}
+              className={cn(
+                "flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                userType === value
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+              )}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-xs font-semibold">{label}</span>
+              <span className="text-[10px] leading-tight opacity-70">{desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="signup-name" className="text-sm text-muted-foreground">
           Full name
@@ -179,10 +227,7 @@ function SignUpForm() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label
-          htmlFor="signup-password"
-          className="text-sm text-muted-foreground"
-        >
+        <Label htmlFor="signup-password" className="text-sm text-muted-foreground">
           Password
         </Label>
         <div className="relative">
@@ -193,6 +238,15 @@ function SignUpForm() {
             autoComplete="new-password"
             {...register("password")}
           />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setShowPassword((p) => !p)}
+            className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground"
+          >
+            {showPassword ? <EyeOff /> : <Eye />}
+          </Button>
         </div>
         {errors.password && (
           <p className="text-xs text-destructive">{errors.password.message}</p>
@@ -200,9 +254,7 @@ function SignUpForm() {
       </div>
 
       {errors.root && (
-        <p className="text-sm text-center text-destructive">
-          {errors.root.message}
-        </p>
+        <p className="text-sm text-center text-destructive">{errors.root.message}</p>
       )}
 
       <Button type="submit" disabled={isSubmitting}>
@@ -243,7 +295,7 @@ function AuthPage() {
         {/* Form */}
         <div className="flex-1 flex items-center justify-center py-16">
           <div className="w-full max-w-sm">
-            <h1 className="text-3xl font-bold tracking-tight mb-8">
+            <h1 className="text-3xl font-bold tracking-tight mb-4">
               {mode === "signin" ? "Welcome back" : "Create account"}
             </h1>
 

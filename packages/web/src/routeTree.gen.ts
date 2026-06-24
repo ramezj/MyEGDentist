@@ -15,6 +15,7 @@ import { Route as DentistRouteRouteImport } from './routes/dentist/route'
 import { Route as marketingRouteRouteImport } from './routes/(marketing)/route'
 import { Route as DentistIndexRouteImport } from './routes/dentist/index'
 import { Route as marketingIndexRouteImport } from './routes/(marketing)/index'
+import { Route as DentistProfileRouteImport } from './routes/dentist/profile'
 import { Route as DentistOnboardingRouteImport } from './routes/dentist/onboarding'
 import { Route as marketingDentistSignupRouteImport } from './routes/(marketing)/dentist-signup'
 
@@ -47,6 +48,11 @@ const marketingIndexRoute = marketingIndexRouteImport.update({
   path: '/',
   getParentRoute: () => marketingRouteRoute,
 } as any)
+const DentistProfileRoute = DentistProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => DentistRouteRoute,
+} as any)
 const DentistOnboardingRoute = DentistOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/health': typeof HealthRoute
   '/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
+  '/dentist/profile': typeof DentistProfileRoute
   '/': typeof marketingIndexRoute
   '/dentist/': typeof DentistIndexRoute
 }
@@ -72,6 +79,7 @@ export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
+  '/dentist/profile': typeof DentistProfileRoute
   '/': typeof marketingIndexRoute
   '/dentist': typeof DentistIndexRoute
 }
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/health': typeof HealthRoute
   '/(marketing)/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
+  '/dentist/profile': typeof DentistProfileRoute
   '/(marketing)/': typeof marketingIndexRoute
   '/dentist/': typeof DentistIndexRoute
 }
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/dentist-signup'
     | '/dentist/onboarding'
+    | '/dentist/profile'
     | '/'
     | '/dentist/'
   fileRoutesByTo: FileRoutesByTo
@@ -102,6 +112,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/dentist-signup'
     | '/dentist/onboarding'
+    | '/dentist/profile'
     | '/'
     | '/dentist'
   id:
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/(marketing)/dentist-signup'
     | '/dentist/onboarding'
+    | '/dentist/profile'
     | '/(marketing)/'
     | '/dentist/'
   fileRoutesById: FileRoutesById
@@ -167,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof marketingIndexRouteImport
       parentRoute: typeof marketingRouteRoute
     }
+    '/dentist/profile': {
+      id: '/dentist/profile'
+      path: '/profile'
+      fullPath: '/dentist/profile'
+      preLoaderRoute: typeof DentistProfileRouteImport
+      parentRoute: typeof DentistRouteRoute
+    }
     '/dentist/onboarding': {
       id: '/dentist/onboarding'
       path: '/onboarding'
@@ -200,11 +219,13 @@ const marketingRouteRouteWithChildren = marketingRouteRoute._addFileChildren(
 
 interface DentistRouteRouteChildren {
   DentistOnboardingRoute: typeof DentistOnboardingRoute
+  DentistProfileRoute: typeof DentistProfileRoute
   DentistIndexRoute: typeof DentistIndexRoute
 }
 
 const DentistRouteRouteChildren: DentistRouteRouteChildren = {
   DentistOnboardingRoute: DentistOnboardingRoute,
+  DentistProfileRoute: DentistProfileRoute,
   DentistIndexRoute: DentistIndexRoute,
 }
 
