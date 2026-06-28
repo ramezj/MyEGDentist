@@ -21,7 +21,7 @@ export const Route = createFileRoute("/dentist")({
 
 function ProtectedLayout() {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh overflow-hidden">
       <AppSidebar />
       <SidebarInset>
         <AppHeader />

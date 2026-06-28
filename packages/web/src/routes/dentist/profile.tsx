@@ -1,22 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient, queryOptions } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { Loader2, Save, CheckCircle2 } from "lucide-react";
-import { apiClient } from "#/lib/api-client";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Textarea } from "#/components/ui/textarea";
-import { Checkbox } from "#/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
-import { Separator } from "#/components/ui/separator";
-import { cn } from "#/lib/utils";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
+import { dentistMeQuery, isAvailability, useUpdateProfile } from "#/queries/dentists";
+import { SectionCard } from "#/components/dentist/section-card";
+import { MultiToggle } from "#/components/multi-toggle";
+import { PageLayout, LoadingLayout } from "#/components/shared/page-layout";
 
 const SPECIALTIES = [
   "General Dentistry", "Orthodontics", "Cosmetic Dentistry", "Oral Surgery",
@@ -30,7 +27,6 @@ const CITIES = [
 
 const LANGUAGES = ["Arabic", "English", "French", "German", "Italian", "Spanish", "Russian"];
 
-
 const EXPERIENCE_OPTIONS = [
   { label: "Less than 1 year", value: "< 1 year" },
   { label: "1–2 years", value: "1-2 years" },
@@ -41,22 +37,10 @@ const EXPERIENCE_OPTIONS = [
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-// ─── Types & schema ───────────────────────────────────────────────────────────
-
-type Availability = { days: string[]; startTime: string; endTime: string };
-
-type DentistProfile = {
-  id: string;
-  clinicName: string;
-  specialty: string;
-  city: string;
-  phone: string | null;
-  bio: string | null;
-  experience: string | null;
-  languages: string[];
-  address: string | null;
-  availability: Availability | null;
-  user: { name: string; image: string | null; email: string };
+const DEFAULT_AVAILABILITY = {
+  days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+  startTime: "09:00",
+  endTime: "17:00",
 };
 
 const formSchema = z.object({
@@ -77,79 +61,15 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// ─── Query ────────────────────────────────────────────────────────────────────
-
-const profileQuery = queryOptions({
-  queryKey: ["dentist", "me"],
-  queryFn: async (): Promise<DentistProfile> => {
-    const res = await apiClient.dentists.me.$get();
-    if (!res.ok) throw new Error("Failed to load profile");
-    return res.json() as unknown as Promise<DentistProfile>;
-  },
-});
-
-// ─── Route ────────────────────────────────────────────────────────────────────
-
 export const Route = createFileRoute("/dentist/profile")({
-  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(profileQuery),
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(dentistMeQuery),
   component: RouteComponent,
 });
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function SectionCard({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <Separator />
-      <CardContent className="pt-5 flex flex-col gap-4">{children}</CardContent>
-    </Card>
-  );
-}
-
-function MultiToggle({
-  options,
-  selected,
-  onChange,
-  cols = 2,
-}: {
-  options: string[];
-  selected: string[];
-  onChange: (v: string[]) => void;
-  cols?: number;
-}) {
-  const toggle = (item: string) =>
-    onChange(selected.includes(item) ? selected.filter((s) => s !== item) : [...selected, item]);
-  return (
-    <div className={cn("grid gap-2", cols === 2 ? "grid-cols-2" : "grid-cols-3 sm:grid-cols-4")}>
-      {options.map((item) => (
-        <div key={item} className="flex items-center gap-2">
-          <Checkbox id={item} checked={selected.includes(item)} onCheckedChange={() => toggle(item)} />
-          <Label htmlFor={item} className="font-normal cursor-pointer text-sm">{item}</Label>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Page component ───────────────────────────────────────────────────────────
-
 function RouteComponent() {
-  const { data: profile } = useQuery(profileQuery);
-  const queryClient = useQueryClient();
+  const { data: profile, isLoading } = useQuery(dentistMeQuery);
+  const updateProfile = useUpdateProfile();
   const [saved, setSaved] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -162,11 +82,10 @@ function RouteComponent() {
       city: "",
       address: "",
       phone: "",
-      availability: { days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], startTime: "09:00", endTime: "17:00" },
+      availability: DEFAULT_AVAILABILITY,
     },
   });
 
-  // Populate once profile loads
   useEffect(() => {
     if (!profile) return;
     form.reset({
@@ -178,11 +97,9 @@ function RouteComponent() {
       city: profile.city,
       address: profile.address ?? "",
       phone: profile.phone ?? "",
-      availability: profile.availability ?? {
-        days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        startTime: "09:00",
-        endTime: "17:00",
-      },
+      availability: isAvailability(profile.availability)
+        ? profile.availability
+        : DEFAULT_AVAILABILITY,
     });
   }, [profile, form]);
 
@@ -190,58 +107,35 @@ function RouteComponent() {
   const languages = watch("languages");
   const availabilityDays = watch("availability.days");
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    setSaved(false);
-    setSaveError(null);
-    try {
-      const backendUrl =
-        (import.meta.env.VITE_BACKEND_URL as string | undefined) || "http://localhost:8080/api";
-      const res = await fetch(`${backendUrl}/dentists/me`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Save failed");
-      }
-      await queryClient.invalidateQueries({ queryKey: ["dentist", "me"] });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Something went wrong");
-    }
+  const onSubmit = form.handleSubmit((data) => {
+    updateProfile.mutate(data as Parameters<typeof updateProfile.mutate>[0], {
+      onSuccess: () => {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      },
+    });
   });
 
+  const isBusy = isSubmitting || updateProfile.isPending;
+
+  const saveButton = (
+    <Button onClick={onSubmit} disabled={isBusy} size="sm">
+      {isBusy ? (
+        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
+      ) : saved ? (
+        <><CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />Saved</>
+      ) : (
+        <><Save className="w-4 h-4 mr-2" />Save changes</>
+      )}
+    </Button>
+  );
+
+  if (isLoading) return <LoadingLayout title="Edit Profile" primaryButton={saveButton} />;
   if (!profile) return null;
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">Edit Profile</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Keep your information up to date for tourists.
-          </p>
-        </div>
-        <Button onClick={onSubmit} disabled={isSubmitting} size="sm">
-          {isSubmitting ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
-          ) : saved ? (
-            <><CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />Saved</>
-          ) : (
-            <><Save className="w-4 h-4 mr-2" />Save changes</>
-          )}
-        </Button>
-      </div>
-
-      {saveError && (
-        <p className="text-sm text-destructive text-center">{saveError}</p>
-      )}
-
-      <form onSubmit={onSubmit} className="space-y-6">
-        {/* Personal */}
+    <PageLayout variant="header" title="Edit Profile" primaryButton={saveButton}>
+      <form onSubmit={onSubmit} className="space-y-6 max-w-2xl">
         <SectionCard title="Personal" description="How you present yourself to patients.">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="bio">Bio</Label>
@@ -272,16 +166,21 @@ function RouteComponent() {
 
           <div className="flex flex-col gap-2">
             <Label>Languages Spoken</Label>
-            <MultiToggle options={LANGUAGES} selected={languages} onChange={(v) => setValue("languages", v)} />
+            <MultiToggle
+              options={LANGUAGES}
+              selected={languages}
+              onChange={(v) => setValue("languages", v)}
+            />
           </div>
         </SectionCard>
 
-        {/* Clinic */}
         <SectionCard title="Clinic Details" description="Your clinic's public contact information.">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="clinicName">Clinic Name *</Label>
             <Input id="clinicName" placeholder="Cairo Smile Dental Center" {...register("clinicName")} />
-            {errors.clinicName && <p className="text-destructive text-xs">{errors.clinicName.message}</p>}
+            {errors.clinicName && (
+              <p className="text-destructive text-xs">{errors.clinicName.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -298,7 +197,9 @@ function RouteComponent() {
                   {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {errors.specialty && <p className="text-destructive text-xs">{errors.specialty.message}</p>}
+              {errors.specialty && (
+                <p className="text-destructive text-xs">{errors.specialty.message}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -314,7 +215,9 @@ function RouteComponent() {
                   {CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {errors.city && <p className="text-destructive text-xs">{errors.city.message}</p>}
+              {errors.city && (
+                <p className="text-destructive text-xs">{errors.city.message}</p>
+              )}
             </div>
           </div>
 
@@ -329,7 +232,6 @@ function RouteComponent() {
           </div>
         </SectionCard>
 
-        {/* Availability */}
         <SectionCard title="Availability" description="Let tourists know when you're open.">
           <div className="flex flex-col gap-2">
             <Label>Working Days</Label>
@@ -353,6 +255,6 @@ function RouteComponent() {
           </div>
         </SectionCard>
       </form>
-    </div>
+    </PageLayout>
   );
 }

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient, queryOptions } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, ChevronLeft, X, Stethoscope } from "lucide-react";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -8,51 +8,7 @@ import { Separator } from "#/components/ui/separator";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { sessionQuery } from "#/lib/session";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type AppointmentStatus = "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
-type TreatmentStatus = "planned" | "completed" | "cancelled";
-
-type Treatment = {
-  id: string;
-  service: string;
-  price: number | null;
-  status: TreatmentStatus;
-  notes: string | null;
-  addedBy: "tourist" | "dentist";
-};
-
-type Booking = {
-  id: string;
-  status: AppointmentStatus;
-  requestedDate: string;
-  confirmedDate: string | null;
-  touristNotes: string | null;
-  dentistNotes: string | null;
-  treatments: Treatment[];
-  dentistProfile: {
-    id: string;
-    clinicName: string;
-    specialty: string;
-    city: string;
-    user: { name: string; image: string | null };
-  };
-};
-
-// ─── Query ────────────────────────────────────────────────────────────────────
-
-const backendUrl =
-  (import.meta.env.VITE_BACKEND_URL as string | undefined) || "http://localhost:8080/api";
-
-const bookingsQuery = queryOptions({
-  queryKey: ["bookings", "mine"],
-  queryFn: async (): Promise<Booking[]> => {
-    const res = await fetch(`${backendUrl}/appointments`, { credentials: "include" });
-    if (!res.ok) throw new Error("Failed to load bookings");
-    return res.json();
-  },
-});
+import { bookingsQuery, useUpdateStatus, type AppointmentStatus, type Booking } from "#/queries/appointments";
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -107,21 +63,11 @@ function initials(name: string) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function RouteComponent() {
-  const { data: bookings = [], isLoading } = useQuery(bookingsQuery);
-  const queryClient = useQueryClient();
-
-  const cancelMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`${backendUrl}/appointments/${id}/status`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "cancelled" }),
-      });
-      if (!res.ok) throw new Error("Failed to cancel");
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookings", "mine"] }),
+  const { data: bookings = [], isLoading } = useQuery({
+    ...bookingsQuery,
+    select: (data): Booking[] => data.filter((d): d is Booking => "dentistProfile" in d),
   });
+  const cancelMutation = useUpdateStatus();
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-5">
@@ -235,7 +181,7 @@ function RouteComponent() {
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
-                      onClick={() => cancelMutation.mutate(b.id)}
+                      onClick={() => cancelMutation.mutate({ id: b.id, body: { status: "cancelled" } })}
                       disabled={cancelMutation.isPending}
                     >
                       <X className="w-3.5 h-3.5" />

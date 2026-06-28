@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "#/lib/auth-client";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -30,6 +31,7 @@ type SignUpValues = z.infer<typeof signUpSchema>;
 
 function SignInForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -44,6 +46,7 @@ function SignInForm() {
       setError("root", { message: error.message ?? "Sign in failed" });
       return;
     }
+    await queryClient.invalidateQueries({ queryKey: ["session"] });
     router.navigate({ to: "/" });
   }
 

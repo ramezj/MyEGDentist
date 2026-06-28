@@ -1,18 +1,72 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { prisma } from "../../core/lib/prisma.js";
 import { auth } from "../../auth.js";
+import { unauthorized, forbidden, notFound, badRequest, conflict } from "../../core/lib/response.js";
+
+// ─── Schemas ──────────────────────────────────────────────────────────────────
+
+const serviceSchema = z.object({
+  name: z.string().min(1),
+  price: z.number().nonnegative(),
+  description: z.string().optional(),
+  durationMinutes: z.number().int().positive().optional(),
+  category: z.string().optional(),
+});
+
+const onboardSchema = z.object({
+  clinicName: z.string().min(1),
+  specialty: z.string().min(1),
+  city: z.string().min(1),
+  phone: z.string().optional(),
+  bio: z.string().optional(),
+  experience: z.string().optional(),
+  languages: z.array(z.string()).optional(),
+  address: z.string().optional(),
+  services: z.array(serviceSchema).optional(),
+});
+
+const updateProfileSchema = z.object({
+  clinicName: z.string().min(1),
+  specialty: z.string().min(1),
+  city: z.string().min(1),
+  phone: z.string().optional(),
+  bio: z.string().optional(),
+  experience: z.string().optional(),
+  languages: z.array(z.string()).optional(),
+  address: z.string().optional(),
+  availability: z.object({
+    days: z.array(z.string()),
+    startTime: z.string(),
+    endTime: z.string(),
+  }).optional(),
+});
+
+const updateServiceSchema = serviceSchema.partial().extend({ isActive: z.boolean().optional() });
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const SERVICE_INCLUDE = {
   where: { isActive: true },
   orderBy: [{ category: "asc" as const }, { name: "asc" as const }],
 };
 
+function validate<T extends z.ZodTypeAny>(schema: T) {
+  return zValidator("json", schema, (result, c) => {
+    if (!result.success) {
+      return badRequest(c, result.error.issues[0]?.message ?? "Invalid request body");
+    }
+  });
+}
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+
 const dentists = new Hono()
 
-  // ── Authenticated dentist profile ─────────────────────────────────────────
   .get("/me", async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
 
     const profile = await prisma.dentistProfile.findUnique({
       where: { userId: session.user.id },
@@ -22,11 +76,10 @@ const dentists = new Hono()
       },
     });
 
-    if (!profile) return c.json({ error: "Profile not found" }, 404);
+    if (!profile) return notFound(c, "Profile not found");
     return c.json(profile);
   })
 
-  // ── Public search ─────────────────────────────────────────────────────────
   .get("/", async (c) => {
     const q = c.req.query("q") ?? "";
     const city = c.req.query("city") ?? "";
@@ -58,54 +111,30 @@ const dentists = new Hono()
     return c.json(results);
   })
 
-  // ── Public single dentist ──────────────────────────────────────────────────
   .get("/:id", async (c) => {
-    const id = c.req.param("id");
-
     const profile = await prisma.dentistProfile.findUnique({
-      where: { id },
+      where: { id: c.req.param("id") },
       include: {
         user: { select: { name: true, image: true } },
         services: SERVICE_INCLUDE,
       },
     });
 
-    if (!profile) return c.json({ error: "Not found" }, 404);
+    if (!profile) return notFound(c);
     return c.json(profile);
   })
 
-  // ── Onboarding ────────────────────────────────────────────────────────────
-  .post("/onboarding", async (c) => {
+  .post("/onboarding", validate(onboardSchema), async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
 
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist") return c.json({ error: "Forbidden" }, 403);
+    if (user.type !== "dentist") return forbidden(c);
 
     const existing = await prisma.dentistProfile.findUnique({ where: { userId: user.id } });
-    if (existing) return c.json({ error: "Profile already exists" }, 400);
+    if (existing) return conflict(c, "Profile already exists");
 
-    const body = (await c.req.json()) as {
-      clinicName: string;
-      specialty: string;
-      city: string;
-      phone?: string;
-      bio?: string;
-      experience?: string;
-      languages?: string[];
-      address?: string;
-      services?: {
-        name: string;
-        price: number;
-        description?: string;
-        durationMinutes?: number;
-        category?: string;
-      }[];
-    };
-
-    if (!body.clinicName?.trim() || !body.specialty?.trim() || !body.city?.trim()) {
-      return c.json({ error: "clinicName, specialty and city are required" }, 400);
-    }
+    const body = c.req.valid("json");
 
     const [profile] = await prisma.$transaction([
       prisma.dentistProfile.create({
@@ -127,32 +156,17 @@ const dentists = new Hono()
       prisma.user.update({ where: { id: user.id }, data: { onboarding: true } }),
     ]);
 
-    return c.json({ success: true, profile });
+    return c.json(profile, 201);
   })
 
-  // ── Update profile ────────────────────────────────────────────────────────
-  .patch("/me", async (c) => {
+  .patch("/me", validate(updateProfileSchema), async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
 
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist") return c.json({ error: "Forbidden" }, 403);
+    if (user.type !== "dentist") return forbidden(c);
 
-    const body = (await c.req.json()) as {
-      clinicName: string;
-      specialty: string;
-      city: string;
-      phone?: string;
-      bio?: string;
-      experience?: string;
-      languages?: string[];
-      address?: string;
-      availability?: { days: string[]; startTime: string; endTime: string };
-    };
-
-    if (!body.clinicName?.trim() || !body.specialty?.trim() || !body.city?.trim()) {
-      return c.json({ error: "clinicName, specialty and city are required" }, 400);
-    }
+    const body = c.req.valid("json");
 
     const profile = await prisma.dentistProfile.update({
       where: { userId: user.id },
@@ -176,15 +190,14 @@ const dentists = new Hono()
     return c.json(profile);
   })
 
-  // ── List my services ──────────────────────────────────────────────────────
   .get("/me/services", async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
 
     const profile = await prisma.dentistProfile.findUnique({
       where: { userId: session.user.id },
     });
-    if (!profile) return c.json({ error: "Profile not found" }, 404);
+    if (!profile) return notFound(c, "Profile not found");
 
     const services = await prisma.dentistService.findMany({
       where: { dentistProfileId: profile.id },
@@ -194,28 +207,17 @@ const dentists = new Hono()
     return c.json(services);
   })
 
-  // ── Create service ────────────────────────────────────────────────────────
-  .post("/me/services", async (c) => {
+  .post("/me/services", validate(serviceSchema), async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
 
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist") return c.json({ error: "Forbidden" }, 403);
+    if (user.type !== "dentist") return forbidden(c);
 
     const profile = await prisma.dentistProfile.findUnique({ where: { userId: user.id } });
-    if (!profile) return c.json({ error: "Profile not found" }, 404);
+    if (!profile) return notFound(c, "Profile not found");
 
-    const body = (await c.req.json()) as {
-      name: string;
-      price: number;
-      description?: string;
-      durationMinutes?: number;
-      category?: string;
-    };
-
-    if (!body.name?.trim()) return c.json({ error: "name is required" }, 400);
-    if (typeof body.price !== "number" || body.price < 0)
-      return c.json({ error: "price must be a non-negative number" }, 400);
+    const body = c.req.valid("json");
 
     const service = await prisma.dentistService.create({
       data: {
@@ -231,31 +233,22 @@ const dentists = new Hono()
     return c.json(service, 201);
   })
 
-  // ── Update service ────────────────────────────────────────────────────────
-  .patch("/me/services/:sid", async (c) => {
+  .patch("/me/services/:sid", validate(updateServiceSchema), async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
 
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist") return c.json({ error: "Forbidden" }, 403);
+    if (user.type !== "dentist") return forbidden(c);
 
     const profile = await prisma.dentistProfile.findUnique({ where: { userId: user.id } });
-    if (!profile) return c.json({ error: "Profile not found" }, 404);
+    if (!profile) return notFound(c, "Profile not found");
 
     const service = await prisma.dentistService.findUnique({
       where: { id: c.req.param("sid") },
     });
-    if (!service || service.dentistProfileId !== profile.id)
-      return c.json({ error: "Not found" }, 404);
+    if (!service || service.dentistProfileId !== profile.id) return notFound(c);
 
-    const body = (await c.req.json()) as {
-      name?: string;
-      price?: number;
-      description?: string;
-      durationMinutes?: number;
-      category?: string;
-      isActive?: boolean;
-    };
+    const body = c.req.valid("json");
 
     const updated = await prisma.dentistService.update({
       where: { id: service.id },
@@ -272,23 +265,21 @@ const dentists = new Hono()
     return c.json(updated);
   })
 
-  // ── Delete service ────────────────────────────────────────────────────────
   .delete("/me/services/:sid", async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
 
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist") return c.json({ error: "Forbidden" }, 403);
+    if (user.type !== "dentist") return forbidden(c);
 
     const profile = await prisma.dentistProfile.findUnique({ where: { userId: user.id } });
-    if (!profile) return c.json({ error: "Profile not found" }, 404);
+    if (!profile) return notFound(c, "Profile not found");
 
     const service = await prisma.dentistService.findUnique({
       where: { id: c.req.param("sid") },
       include: { _count: { select: { treatments: true } } },
     });
-    if (!service || service.dentistProfileId !== profile.id)
-      return c.json({ error: "Not found" }, 404);
+    if (!service || service.dentistProfileId !== profile.id) return notFound(c);
 
     if (service._count.treatments > 0) {
       // Soft delete — preserve historical treatment links
@@ -296,11 +287,11 @@ const dentists = new Hono()
         where: { id: service.id },
         data: { isActive: false },
       });
-      return c.json({ archived: true });
+      return c.json({ ok: true, archived: true });
     }
 
     await prisma.dentistService.delete({ where: { id: service.id } });
-    return c.json({ deleted: true });
+    return c.json({ ok: true });
   });
 
 export default dentists;

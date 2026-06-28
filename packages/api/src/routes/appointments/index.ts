@@ -1,14 +1,46 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { prisma } from "../../core/lib/prisma.js";
 import { auth } from "../../auth.js";
-import type { AppointmentStatus, TreatmentStatus } from "../../generated/prisma/client.js";
+import { unauthorized, forbidden, notFound, badRequest } from "../../core/lib/response.js";
+import type { AppointmentStatus } from "../../generated/prisma/client.js";
+
+// ─── Schemas ──────────────────────────────────────────────────────────────────
+
+const createAppointmentSchema = z.object({
+  dentistProfileId: z.string(),
+  serviceIds: z.array(z.string()).min(1),
+  requestedDate: z.string(),
+  touristNotes: z.string().optional(),
+});
+
+const updateStatusSchema = z.object({
+  status: z.enum(["pending", "confirmed", "in_progress", "completed", "cancelled"]),
+  confirmedDate: z.string().optional(),
+  dentistNotes: z.string().optional(),
+  reason: z.string().optional(),
+});
+
+const updateNotesSchema = z.object({
+  dentistNotes: z.string(),
+});
+
+const addTreatmentSchema = z.object({
+  serviceId: z.string(),
+  notes: z.string().optional(),
+});
+
+const updateTreatmentSchema = z.object({
+  status: z.enum(["planned", "completed", "cancelled"]).optional(),
+  notes: z.string().optional(),
+});
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TOURIST_ALLOWED_STATUSES: AppointmentStatus[] = ["cancelled"];
 const DENTIST_ALLOWED_STATUSES: AppointmentStatus[] = [
-  "confirmed",
-  "in_progress",
-  "completed",
-  "cancelled",
+  "confirmed", "in_progress", "completed", "cancelled",
 ];
 
 async function getSession(c: { req: { raw: Request } }) {
@@ -19,32 +51,31 @@ const TREATMENT_INCLUDE = {
   catalogService: { select: { id: true, name: true, price: true, category: true } },
 };
 
+function validate<T extends z.ZodTypeAny>(schema: T) {
+  return zValidator("json", schema, (result, c) => {
+    if (!result.success) {
+      return badRequest(c, result.error.issues[0]?.message ?? "Invalid request body");
+    }
+  });
+}
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+
 const appointments = new Hono()
 
-  // ── Create booking (tourist only) ──────────────────────────────────────────
-  .post("/", async (c) => {
+  .post("/", validate(createAppointmentSchema), async (c) => {
     const session = await getSession(c);
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "tourist")
-      return c.json({ error: "Only tourists can book appointments" }, 403);
+    if (user.type !== "tourist") return forbidden(c, "Only tourists can book appointments");
 
-    const body = (await c.req.json()) as {
-      dentistProfileId: string;
-      serviceIds: string[];
-      requestedDate: string;
-      touristNotes?: string;
-    };
-
-    if (!body.dentistProfileId || !body.serviceIds?.length || !body.requestedDate)
-      return c.json({ error: "dentistProfileId, serviceIds and requestedDate are required" }, 400);
+    const body = c.req.valid("json");
 
     const dentist = await prisma.dentistProfile.findUnique({
       where: { id: body.dentistProfileId },
     });
-    if (!dentist) return c.json({ error: "Dentist not found" }, 404);
+    if (!dentist) return notFound(c, "Dentist not found");
 
-    // Fetch the selected services to snapshot name + price
     const services = await prisma.dentistService.findMany({
       where: {
         id: { in: body.serviceIds },
@@ -52,9 +83,7 @@ const appointments = new Hono()
         isActive: true,
       },
     });
-
-    if (services.length === 0)
-      return c.json({ error: "No valid services selected" }, 400);
+    if (services.length === 0) return badRequest(c, "No valid services selected");
 
     const appointment = await prisma.appointment.create({
       data: {
@@ -83,10 +112,9 @@ const appointments = new Hono()
     return c.json(appointment, 201);
   })
 
-  // ── List my appointments (role-aware) ──────────────────────────────────────
   .get("/", async (c) => {
     const session = await getSession(c);
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
     const user = session.user as typeof auth.$Infer.Session.user;
 
     if (user.type === "tourist") {
@@ -94,9 +122,7 @@ const appointments = new Hono()
         where: { touristId: user.id },
         include: {
           treatments: { orderBy: { createdAt: "asc" }, include: TREATMENT_INCLUDE },
-          dentistProfile: {
-            include: { user: { select: { name: true, image: true } } },
-          },
+          dentistProfile: { include: { user: { select: { name: true, image: true } } } },
         },
         orderBy: { requestedDate: "asc" },
       });
@@ -105,7 +131,7 @@ const appointments = new Hono()
 
     if (user.type === "dentist") {
       const profile = await prisma.dentistProfile.findUnique({ where: { userId: user.id } });
-      if (!profile) return c.json({ error: "Profile not found" }, 404);
+      if (!profile) return notFound(c, "Profile not found");
 
       const list = await prisma.appointment.findMany({
         where: { dentistProfileId: profile.id },
@@ -121,19 +147,15 @@ const appointments = new Hono()
     return c.json([]);
   })
 
-  // ── Get single appointment ──────────────────────────────────────────────────
   .get("/:id", async (c) => {
     const session = await getSession(c);
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
     const user = session.user as typeof auth.$Infer.Session.user;
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: c.req.param("id") },
       include: {
-        treatments: {
-          orderBy: { createdAt: "asc" },
-          include: TREATMENT_INCLUDE,
-        },
+        treatments: { orderBy: { createdAt: "asc" }, include: TREATMENT_INCLUDE },
         statusHistory: {
           orderBy: { changedAt: "asc" },
           include: { changedBy: { select: { name: true } } },
@@ -143,47 +165,40 @@ const appointments = new Hono()
       },
     });
 
-    if (!appointment) return c.json({ error: "Not found" }, 404);
+    if (!appointment) return notFound(c);
 
     const isOwner = appointment.touristId === user.id;
     const isDentist = user.type === "dentist" && appointment.dentistProfile.userId === user.id;
-    if (!isOwner && !isDentist) return c.json({ error: "Forbidden" }, 403);
+    if (!isOwner && !isDentist) return forbidden(c);
 
     return c.json(appointment);
   })
 
-  // ── Update appointment status ───────────────────────────────────────────────
-  .patch("/:id/status", async (c) => {
+  .patch("/:id/status", validate(updateStatusSchema), async (c) => {
     const session = await getSession(c);
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
     const user = session.user as typeof auth.$Infer.Session.user;
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: c.req.param("id") },
       include: { dentistProfile: true },
     });
-    if (!appointment) return c.json({ error: "Not found" }, 404);
+    if (!appointment) return notFound(c);
 
     const isOwner = appointment.touristId === user.id;
     const isDentist = user.type === "dentist" && appointment.dentistProfile.userId === user.id;
-    if (!isOwner && !isDentist) return c.json({ error: "Forbidden" }, 403);
+    if (!isOwner && !isDentist) return forbidden(c);
 
-    const body = (await c.req.json()) as {
-      status: AppointmentStatus;
-      confirmedDate?: string;
-      dentistNotes?: string;
-      reason?: string;
-    };
-
+    const body = c.req.valid("json");
     const allowed = isDentist ? DENTIST_ALLOWED_STATUSES : TOURIST_ALLOWED_STATUSES;
-    if (!allowed.includes(body.status))
-      return c.json({ error: `Cannot set status to "${body.status}"` }, 403);
+    if (!allowed.includes(body.status as AppointmentStatus))
+      return forbidden(c, `Cannot set status to "${body.status}"`);
 
     const updated = await prisma.$transaction(async (tx) => {
       const appt = await tx.appointment.update({
         where: { id: c.req.param("id") },
         data: {
-          status: body.status,
+          status: body.status as AppointmentStatus,
           ...(body.confirmedDate && { confirmedDate: new Date(body.confirmedDate) }),
           ...(body.dentistNotes !== undefined && { dentistNotes: body.dentistNotes }),
         },
@@ -197,7 +212,7 @@ const appointments = new Hono()
         data: {
           appointmentId: appt.id,
           fromStatus: appointment.status,
-          toStatus: body.status,
+          toStatus: body.status as AppointmentStatus,
           changedById: user.id,
           reason: body.reason ?? null,
         },
@@ -208,21 +223,19 @@ const appointments = new Hono()
     return c.json(updated);
   })
 
-  // ── Update dentist notes ────────────────────────────────────────────────────
-  .patch("/:id/notes", async (c) => {
+  .patch("/:id/notes", validate(updateNotesSchema), async (c) => {
     const session = await getSession(c);
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist") return c.json({ error: "Forbidden" }, 403);
+    if (user.type !== "dentist") return forbidden(c);
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: c.req.param("id") },
       include: { dentistProfile: true },
     });
-    if (!appointment || appointment.dentistProfile.userId !== user.id)
-      return c.json({ error: "Forbidden" }, 403);
+    if (!appointment || appointment.dentistProfile.userId !== user.id) return forbidden(c);
 
-    const { dentistNotes } = (await c.req.json()) as { dentistNotes: string };
+    const { dentistNotes } = c.req.valid("json");
     const updated = await prisma.appointment.update({
       where: { id: c.req.param("id") },
       data: { dentistNotes },
@@ -231,29 +244,24 @@ const appointments = new Hono()
     return c.json(updated);
   })
 
-  // ── Add treatment (dentist only, from their catalog) ───────────────────────
-  .post("/:id/treatments", async (c) => {
+  .post("/:id/treatments", validate(addTreatmentSchema), async (c) => {
     const session = await getSession(c);
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist") return c.json({ error: "Only dentists can add treatments" }, 403);
+    if (user.type !== "dentist") return forbidden(c, "Only dentists can add treatments");
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: c.req.param("id") },
       include: { dentistProfile: true },
     });
-    if (!appointment) return c.json({ error: "Not found" }, 404);
-    if (appointment.dentistProfile.userId !== user.id)
-      return c.json({ error: "Forbidden" }, 403);
+    if (!appointment) return notFound(c);
+    if (appointment.dentistProfile.userId !== user.id) return forbidden(c);
 
-    const body = (await c.req.json()) as { serviceId: string; notes?: string };
-    if (!body.serviceId) return c.json({ error: "serviceId is required" }, 400);
+    const { serviceId, notes } = c.req.valid("json");
 
-    const service = await prisma.dentistService.findUnique({
-      where: { id: body.serviceId },
-    });
+    const service = await prisma.dentistService.findUnique({ where: { id: serviceId } });
     if (!service || service.dentistProfileId !== appointment.dentistProfileId)
-      return c.json({ error: "Service not found in your catalog" }, 404);
+      return notFound(c, "Service not found in your catalog");
 
     const treatment = await prisma.appointmentTreatment.create({
       data: {
@@ -261,7 +269,7 @@ const appointments = new Hono()
         serviceId: service.id,
         service: service.name,
         price: service.price,
-        notes: body.notes ?? null,
+        notes: notes ?? null,
         addedBy: "dentist",
       },
       include: TREATMENT_INCLUDE,
@@ -270,25 +278,19 @@ const appointments = new Hono()
     return c.json(treatment, 201);
   })
 
-  // ── Update treatment ────────────────────────────────────────────────────────
-  .patch("/:id/treatments/:tid", async (c) => {
+  .patch("/:id/treatments/:tid", validate(updateTreatmentSchema), async (c) => {
     const session = await getSession(c);
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist")
-      return c.json({ error: "Only dentists can update treatments" }, 403);
+    if (user.type !== "dentist") return forbidden(c, "Only dentists can update treatments");
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: c.req.param("id") },
       include: { dentistProfile: true },
     });
-    if (!appointment || appointment.dentistProfile.userId !== user.id)
-      return c.json({ error: "Forbidden" }, 403);
+    if (!appointment || appointment.dentistProfile.userId !== user.id) return forbidden(c);
 
-    const body = (await c.req.json()) as {
-      status?: TreatmentStatus;
-      notes?: string;
-    };
+    const body = c.req.valid("json");
 
     const treatment = await prisma.appointmentTreatment.update({
       where: { id: c.req.param("tid") },
@@ -304,30 +306,27 @@ const appointments = new Hono()
     return c.json(treatment);
   })
 
-  // ── Delete treatment ────────────────────────────────────────────────────────
   .delete("/:id/treatments/:tid", async (c) => {
     const session = await getSession(c);
-    if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
+    if (!session?.user) return unauthorized(c);
     const user = session.user as typeof auth.$Infer.Session.user;
-    if (user.type !== "dentist")
-      return c.json({ error: "Only dentists can remove treatments" }, 403);
+    if (user.type !== "dentist") return forbidden(c, "Only dentists can remove treatments");
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: c.req.param("id") },
       include: { dentistProfile: true },
     });
-    if (!appointment || appointment.dentistProfile.userId !== user.id)
-      return c.json({ error: "Forbidden" }, 403);
+    if (!appointment || appointment.dentistProfile.userId !== user.id) return forbidden(c);
 
     const treatment = await prisma.appointmentTreatment.findUnique({
       where: { id: c.req.param("tid") },
     });
-    if (!treatment) return c.json({ error: "Not found" }, 404);
+    if (!treatment) return notFound(c);
     if (treatment.status === "completed")
-      return c.json({ error: "Cannot remove a completed treatment" }, 400);
+      return badRequest(c, "Cannot remove a completed treatment");
 
     await prisma.appointmentTreatment.delete({ where: { id: c.req.param("tid") } });
-    return c.json({ success: true });
+    return c.json({ ok: true });
   });
 
 export default appointments;

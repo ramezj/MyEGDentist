@@ -19,7 +19,6 @@ import { Route as DentistServicesRouteImport } from './routes/dentist/services'
 import { Route as DentistProfileRouteImport } from './routes/dentist/profile'
 import { Route as DentistOnboardingRouteImport } from './routes/dentist/onboarding'
 import { Route as DentistAppointmentsRouteImport } from './routes/dentist/appointments'
-import { Route as marketingDentistSignupRouteImport } from './routes/(marketing)/dentist-signup'
 import { Route as marketingBookingsRouteImport } from './routes/(marketing)/bookings'
 import { Route as marketingDentistsIdRouteImport } from './routes/(marketing)/dentists.$id'
 
@@ -72,11 +71,6 @@ const DentistAppointmentsRoute = DentistAppointmentsRouteImport.update({
   path: '/appointments',
   getParentRoute: () => DentistRouteRoute,
 } as any)
-const marketingDentistSignupRoute = marketingDentistSignupRouteImport.update({
-  id: '/dentist-signup',
-  path: '/dentist-signup',
-  getParentRoute: () => marketingRouteRoute,
-} as any)
 const marketingBookingsRoute = marketingBookingsRouteImport.update({
   id: '/bookings',
   path: '/bookings',
@@ -93,7 +87,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/health': typeof HealthRoute
   '/bookings': typeof marketingBookingsRoute
-  '/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/appointments': typeof DentistAppointmentsRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
   '/dentist/profile': typeof DentistProfileRoute
@@ -106,7 +99,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/health': typeof HealthRoute
   '/bookings': typeof marketingBookingsRoute
-  '/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/appointments': typeof DentistAppointmentsRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
   '/dentist/profile': typeof DentistProfileRoute
@@ -122,7 +114,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/health': typeof HealthRoute
   '/(marketing)/bookings': typeof marketingBookingsRoute
-  '/(marketing)/dentist-signup': typeof marketingDentistSignupRoute
   '/dentist/appointments': typeof DentistAppointmentsRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
   '/dentist/profile': typeof DentistProfileRoute
@@ -138,7 +129,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/health'
     | '/bookings'
-    | '/dentist-signup'
     | '/dentist/appointments'
     | '/dentist/onboarding'
     | '/dentist/profile'
@@ -151,7 +141,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/health'
     | '/bookings'
-    | '/dentist-signup'
     | '/dentist/appointments'
     | '/dentist/onboarding'
     | '/dentist/profile'
@@ -166,7 +155,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/health'
     | '/(marketing)/bookings'
-    | '/(marketing)/dentist-signup'
     | '/dentist/appointments'
     | '/dentist/onboarding'
     | '/dentist/profile'
@@ -255,13 +243,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DentistAppointmentsRouteImport
       parentRoute: typeof DentistRouteRoute
     }
-    '/(marketing)/dentist-signup': {
-      id: '/(marketing)/dentist-signup'
-      path: '/dentist-signup'
-      fullPath: '/dentist-signup'
-      preLoaderRoute: typeof marketingDentistSignupRouteImport
-      parentRoute: typeof marketingRouteRoute
-    }
     '/(marketing)/bookings': {
       id: '/(marketing)/bookings'
       path: '/bookings'
@@ -281,14 +262,12 @@ declare module '@tanstack/react-router' {
 
 interface marketingRouteRouteChildren {
   marketingBookingsRoute: typeof marketingBookingsRoute
-  marketingDentistSignupRoute: typeof marketingDentistSignupRoute
   marketingIndexRoute: typeof marketingIndexRoute
   marketingDentistsIdRoute: typeof marketingDentistsIdRoute
 }
 
 const marketingRouteRouteChildren: marketingRouteRouteChildren = {
   marketingBookingsRoute: marketingBookingsRoute,
-  marketingDentistSignupRoute: marketingDentistSignupRoute,
   marketingIndexRoute: marketingIndexRoute,
   marketingDentistsIdRoute: marketingDentistsIdRoute,
 }
