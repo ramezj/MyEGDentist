@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select";
+import { ServiceCatalogEditor, type DentistService } from "#/components/service-catalog-editor";
 
 export const Route = createFileRoute("/dentist/onboarding")({
   component: RouteComponent,
@@ -50,18 +51,6 @@ const CITIES = [
 
 const LANGUAGES = ["Arabic", "English", "French", "German", "Italian", "Spanish", "Russian"];
 
-const SERVICES = [
-  "Teeth Whitening",
-  "Dental Implants",
-  "Veneers",
-  "Braces / Invisalign",
-  "Root Canal Treatment",
-  "Professional Cleaning",
-  "Crowns & Bridges",
-  "Tooth Extractions",
-  "Dental Fillings",
-  "Smile Makeover",
-];
 
 const EXPERIENCE_OPTIONS = [
   { label: "Less than 1 year", value: "< 1 year" },
@@ -80,7 +69,7 @@ const formSchema = z.object({
   city: z.string().min(1, "Please select a city"),
   address: z.string().optional(),
   phone: z.string().optional(),
-  services: z.array(z.string()),
+  services: z.array(z.object({ name: z.string(), price: z.number() })),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -383,15 +372,14 @@ function RouteComponent() {
           {step === 3 && (
             <Card>
               <CardHeader>
-                <CardTitle>Services Offered</CardTitle>
+                <CardTitle>Services & Pricing</CardTitle>
                 <CardDescription>
-                  Select the treatments your clinic provides. Tourists will filter by these.
+                  Add the treatments you offer and set a price for each. Tourists will see these when booking.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-5">
-                <MultiToggle
-                  options={SERVICES}
-                  selected={services}
+                <ServiceCatalogEditor
+                  services={services as DentistService[]}
                   onChange={(v) => setValue("services", v)}
                 />
 

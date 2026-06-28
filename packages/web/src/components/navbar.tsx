@@ -7,8 +7,18 @@ import { sessionQuery, useSession } from "#/lib/session";
 export function Navbar() {
   const { data: user = null } = useSession();
   const queryClient = useQueryClient();
+
+  function signOut() {
+    void authClient.signOut({
+      fetchOptions: {
+        onSuccess: () =>
+          queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey }),
+      },
+    });
+  }
+
   return (
-    <header className="border-b bg-background">
+    <header className="border-b bg-background sticky top-0 z-10">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link to="/" className="font-semibold text-sm">
           MyEGDentist
@@ -24,40 +34,17 @@ export function Navbar() {
               )}
               {user.type === "tourist" && (
                 <Button variant="outline" size="sm" asChild>
-                  <Link to="/dentist">Dashboard</Link>
+                  <Link to="/bookings">My Bookings</Link>
                 </Button>
               )}
-              {user.type === "agency" && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/dentist">Dashboard</Link>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  void authClient.signOut({
-                    fetchOptions: {
-                      onSuccess: () =>
-                        queryClient.invalidateQueries({
-                          queryKey: sessionQuery.queryKey,
-                        }),
-                    },
-                  })
-                }
-              >
+              <Button variant="outline" size="sm" onClick={signOut}>
                 Sign out
               </Button>
             </>
           ) : (
-            <>
-              <Button variant="default" asChild>
-                <Link to="/auth">Sign in</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/dentist-signup">Dentist Portal</Link>
-              </Button>
-            </>
+            <Button variant="default" size="sm" asChild>
+              <Link to="/auth">Sign in</Link>
+            </Button>
           )}
         </div>
       </div>

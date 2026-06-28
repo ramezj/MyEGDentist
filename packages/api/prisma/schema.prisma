@@ -12,11 +12,34 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
 enum UserType {
   tourist
   agency
   dentist
 }
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+}
+
+enum TreatmentStatus {
+  planned
+  completed
+  cancelled
+}
+
+enum AddedBy {
+  tourist
+  dentist
+}
+
+// ─── Auth models ──────────────────────────────────────────────────────────────
 
 model User {
   id            String    @id
@@ -28,9 +51,14 @@ model User {
   onboarding    Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
   sessions       Session[]
   accounts       Account[]
   dentistProfile DentistProfile?
+
+  // Appointment relations
+  touristAppointments      Appointment[]              @relation("TouristAppointments")
+  appointmentStatusChanges AppointmentStatusHistory[] @relation("StatusChanges")
 
   @@unique([email])
   @@map("user")
@@ -84,21 +112,107 @@ model Verification {
   @@map("verification")
 }
 
+// ─── Dentist profile ──────────────────────────────────────────────────────────
+
 model DentistProfile {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clinicName String
-  specialty  String
-  city       String
-  phone      String?
-  bio        String?
-  experience String?
-  languages  String[]
-  address    String?
-  services   String[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicName   String
+  specialty    String
+  city         String
+  phone        String?
+  bio          String?
+  experience   String?
+  languages    String[]
+  address      String?
+  availability Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  services     DentistService[]
+  appointments Appointment[]
 
   @@map("dentist_profile")
+}
+
+// ─── Appointments ─────────────────────────────────────────────────────────────
+
+model Appointment {
+  id               String            @id @default(cuid())
+  dentistProfileId String
+  dentistProfile   DentistProfile    @relation(fields: [dentistProfileId], references: [id], onDelete: Cascade)
+  touristId        String
+  tourist          User              @relation("TouristAppointments", fields: [touristId], references: [id], onDelete: Cascade)
+  status           AppointmentStatus @default(pending)
+  requestedDate    DateTime
+  confirmedDate    DateTime?
+  touristNotes     String?
+  dentistNotes     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  treatments    AppointmentTreatment[]
+  statusHistory AppointmentStatusHistory[]
+
+  @@index([dentistProfileId])
+  @@index([touristId])
+  @@map("appointment")
+}
+
+// ─── Dentist service catalog ──────────────────────────────────────────────────
+
+model DentistService {
+  id               String         @id @default(cuid())
+  dentistProfileId String
+  dentistProfile   DentistProfile @relation(fields: [dentistProfileId], references: [id], onDelete: Cascade)
+  name             String
+  price            Float
+  description      String?
+  durationMinutes  Int?
+  category         String?
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  treatments AppointmentTreatment[]
+
+  @@index([dentistProfileId])
+  @@map("dentist_service")
+}
+
+// Individual treatments within an appointment — can be added/updated by dentist
+model AppointmentTreatment {
+  id            String          @id @default(cuid())
+  appointmentId String
+  appointment   Appointment     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  serviceId     String?
+  catalogService DentistService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  service       String
+  price         Float?
+  status        TreatmentStatus @default(planned)
+  notes         String?
+  addedBy       AddedBy         @default(tourist)
+  completedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([appointmentId])
+  @@map("appointment_treatment")
+}
+
+// Full audit trail of every status change
+model AppointmentStatusHistory {
+  id            String             @id @default(cuid())
+  appointmentId String
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  fromStatus    AppointmentStatus?
+  toStatus      AppointmentStatus
+  changedById   String
+  changedBy     User               @relation("StatusChanges", fields: [changedById], references: [id])
+  reason        String?
+  changedAt     DateTime           @default(now())
+
+  @@index([appointmentId])
+  @@map("appointment_status_history")
 }

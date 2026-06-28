@@ -30,7 +30,7 @@ type DentistProfile = {
   experience: string | null;
   languages: string[];
   address: string | null;
-  services: string[];
+  services: { name: string; price: number }[];
   user: { name: string; image: string | null; email: string };
 };
 
@@ -39,7 +39,7 @@ const dentistProfileQuery = queryOptions({
   queryFn: async (): Promise<DentistProfile> => {
     const res = await apiClient.dentists.me.$get();
     if (!res.ok) throw new Error("Failed to load profile");
-    return res.json() as Promise<DentistProfile>;
+    return res.json() as unknown as Promise<DentistProfile>;
   },
 });
 
@@ -222,8 +222,8 @@ function RouteComponent() {
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {profile.services.map((s) => (
-                      <Badge key={s} variant="outline">
-                        {s}
+                      <Badge key={s.name} variant="outline">
+                        {s.name}
                       </Badge>
                     ))}
                   </div>

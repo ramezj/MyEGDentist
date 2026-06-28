@@ -10,7 +10,7 @@ app.use(
   cors({
     origin: [process.env.APP_URL as string, "http://localhost:3000"],
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["POST", "GET", "OPTIONS"],
+    allowMethods: ["POST", "GET", "PATCH", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
     credentials: true,
