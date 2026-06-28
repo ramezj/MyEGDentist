@@ -2,8 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  MapPin, Phone, Clock, Building2, Stethoscope,
-  Languages, ChevronLeft, CalendarDays,
+  MapPin,
+  Phone,
+  Clock,
+  Building2,
+  Stethoscope,
+  Languages,
+  ChevronLeft,
+  CalendarDays,
 } from "lucide-react";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -22,12 +28,22 @@ export const Route = createFileRoute("/(marketing)/dentists/$id")({
 });
 
 function initials(name: string) {
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 const DAY_ABBR: Record<string, string> = {
-  Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed",
-  Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun",
+  Monday: "Mon",
+  Tuesday: "Tue",
+  Wednesday: "Wed",
+  Thursday: "Thu",
+  Friday: "Fri",
+  Saturday: "Sat",
+  Sunday: "Sun",
 };
 
 function formatTime(t: string) {
@@ -64,25 +80,37 @@ function RouteComponent() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   function handleBookClick() {
-    if (!user) { void navigate({ to: "/auth" }); return; }
+    if (!user) {
+      void navigate({ to: "/auth" });
+      return;
+    }
     if (user.type !== "tourist") return;
     setSheetOpen(true);
   }
 
   if (isLoading) return <ProfileSkeleton />;
-  if (!profile) return (
-    <div className="text-center py-24 text-muted-foreground">
-      <p className="font-medium">Dentist not found.</p>
-      <Button asChild variant="link" className="mt-2"><Link to="/">Back to search</Link></Button>
-    </div>
-  );
+  if (!profile)
+    return (
+      <div className="text-center py-24 text-muted-foreground">
+        <p className="font-medium">Dentist not found.</p>
+        <Button asChild variant="link" className="mt-2">
+          <Link to="/">Back to search</Link>
+        </Button>
+      </div>
+    );
 
-  const avail = isAvailability(profile.availability) ? profile.availability : null;
+  const avail = isAvailability(profile.availability)
+    ? profile.availability
+    : null;
   const canBook = !user || user.type === "tourist";
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 space-y-5">
-      <BookingSheet open={sheetOpen} onClose={() => setSheetOpen(false)} profile={profile} />
+    <div className="max-w-5xl mx-auto px-4 py-10 space-y-5">
+      <BookingSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        profile={profile}
+      />
 
       <Link
         to="/"
@@ -104,7 +132,9 @@ function RouteComponent() {
 
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold">Dr. {profile.user.name}</h1>
-              <p className="text-muted-foreground mt-0.5">{profile.clinicName}</p>
+              <p className="text-muted-foreground mt-0.5">
+                {profile.clinicName}
+              </p>
 
               <div className="flex flex-wrap gap-2 mt-3">
                 <Badge className="gap-1">
@@ -125,7 +155,11 @@ function RouteComponent() {
             </div>
 
             {canBook && (
-              <Button className="shrink-0 self-start gap-2" size="sm" onClick={handleBookClick}>
+              <Button
+                className="shrink-0 self-start gap-2"
+                size="sm"
+                onClick={handleBookClick}
+              >
                 <CalendarDays className="w-4 h-4" />
                 Book Appointment
               </Button>
@@ -152,7 +186,9 @@ function RouteComponent() {
             </h2>
             <div className="flex flex-wrap gap-2">
               {profile.languages.map((l) => (
-                <Badge key={l} variant="secondary">{l}</Badge>
+                <Badge key={l} variant="secondary">
+                  {l}
+                </Badge>
               ))}
             </div>
           </section>
@@ -168,14 +204,21 @@ function RouteComponent() {
             </h2>
             <div className="rounded-md border divide-y">
               {profile.services.map((s) => (
-                <div key={s.id} className="flex items-start justify-between px-3 py-2.5 gap-3">
+                <div
+                  key={s.id}
+                  className="flex items-start justify-between px-3 py-2.5 gap-3"
+                >
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{s.name}</p>
                     {s.description && (
-                      <p className="text-xs text-muted-foreground">{s.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {s.description}
+                      </p>
                     )}
                     {s.durationMinutes && (
-                      <p className="text-xs text-muted-foreground">~{s.durationMinutes} min</p>
+                      <p className="text-xs text-muted-foreground">
+                        ~{s.durationMinutes} min
+                      </p>
                     )}
                   </div>
                   <span className="text-sm font-medium tabular-nums text-muted-foreground shrink-0">
@@ -231,7 +274,10 @@ function RouteComponent() {
               {profile.phone && (
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <a href={`tel:${profile.phone}`} className="hover:underline underline-offset-2">
+                  <a
+                    href={`tel:${profile.phone}`}
+                    className="hover:underline underline-offset-2"
+                  >
                     {profile.phone}
                   </a>
                 </div>

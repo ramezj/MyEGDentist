@@ -4,8 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import { Input } from "#/components/ui/input";
 import { Button } from "#/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
-import { DentistCard, DentistCardSkeleton } from "#/components/shared/dentist-card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select";
+import {
+  DentistCard,
+  DentistCardSkeleton,
+} from "#/components/shared/dentist-card";
 import { CITIES, SPECIALTIES } from "#/lib/constants";
 import { client } from "#/lib/client";
 
@@ -34,61 +43,86 @@ function Home() {
   return (
     <main>
       <section className="py-16 px-4 text-center border-b bg-muted/30">
-        <h1 className="text-4xl font-bold tracking-tight mb-3">Find Your Dentist in Egypt</h1>
-        <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-          Quality dental care for international patients. Browse verified clinics across Egypt.
-        </p>
+        <div className="max-w-5xl mx-auto lg:px-4">
+          <h1 className="text-4xl font-bold tracking-tight mb-3">
+            Find Your Dentist in Egypt
+          </h1>
+          <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+            Quality dental care for international patients. Browse verified
+            clinics across Egypt.
+          </p>
 
-        <div className="flex flex-col sm:flex-row gap-2 w-full max-w-2xl mx-auto">
           <form
-            className="flex gap-2 flex-1"
-            onSubmit={(e) => { e.preventDefault(); setQ(searchInput); }}
+            className="flex flex-col gap-2 w-full mx-auto"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setQ(searchInput);
+            }}
           >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                className="pl-9 bg-background"
-                placeholder="Search name, clinic, specialty…"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  className="pl-9 bg-background"
+                  placeholder="Search name, clinic, specialty…"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
+              <Button type="submit">Search</Button>
             </div>
-            <Button type="submit">Search</Button>
+
+            <div className="flex gap-2">
+              <Select value={city} onValueChange={setCity}>
+                <SelectTrigger className="flex-1 bg-background">
+                  <SelectValue placeholder="All cities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All cities</SelectItem>
+                  {CITIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={specialty} onValueChange={setSpecialty}>
+                <SelectTrigger className="flex-1 bg-background">
+                  <SelectValue placeholder="All specialties" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All specialties</SelectItem>
+                  {SPECIALTIES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </form>
-
-          <Select value={city} onValueChange={setCity}>
-            <SelectTrigger className="w-full sm:w-40 bg-background">
-              <SelectValue placeholder="All cities" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All cities</SelectItem>
-              {CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-
-          <Select value={specialty} onValueChange={setSpecialty}>
-            <SelectTrigger className="w-full sm:w-48 bg-background">
-              <SelectValue placeholder="All specialties" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All specialties</SelectItem>
-              {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
         </div>
       </section>
 
-      <section className="max-w-3xl mx-auto px-4 py-8">
+      <section className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-4">
           {!isLoading && (
             <p className="text-sm text-muted-foreground">
               {dentists.length === 0
-                ? hasFilters ? "No results" : "No dentists registered yet"
+                ? hasFilters
+                  ? "No results"
+                  : "No dentists registered yet"
                 : `${dentists.length} dentist${dentists.length !== 1 ? "s" : ""} found`}
             </p>
           )}
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="gap-1 text-muted-foreground"
+            >
               <X className="w-3.5 h-3.5" />
               Clear filters
             </Button>
@@ -97,11 +131,15 @@ function Home() {
 
         {isLoading ? (
           <div className="space-y-3">
-            {Array.from({ length: 4 }, (_, i) => <DentistCardSkeleton key={i} />)}
+            {Array.from({ length: 4 }, (_, i) => (
+              <DentistCardSkeleton key={i} />
+            ))}
           </div>
         ) : dentists.length > 0 ? (
           <div className="space-y-3">
-            {dentists.map((d) => <DentistCard key={d.id} d={d} />)}
+            {dentists.map((d) => (
+              <DentistCard key={d.id} d={d} />
+            ))}
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground">
@@ -109,7 +147,10 @@ function Home() {
             {hasFilters && (
               <p className="text-sm mt-1">
                 Try adjusting your search or{" "}
-                <button onClick={clearFilters} className="underline underline-offset-2">
+                <button
+                  onClick={clearFilters}
+                  className="underline underline-offset-2"
+                >
                   clear all filters
                 </button>
               </p>
