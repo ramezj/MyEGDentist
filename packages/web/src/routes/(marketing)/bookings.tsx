@@ -8,7 +8,12 @@ import { Separator } from "#/components/ui/separator";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { sessionQuery } from "#/lib/session";
-import { bookingsQuery, useUpdateStatus, type AppointmentStatus, type Booking } from "#/queries/appointments";
+import {
+  bookingsQuery,
+  useUpdateStatus,
+  type AppointmentStatus,
+  type Booking,
+} from "#/queries/appointments";
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -65,12 +70,13 @@ function initials(name: string) {
 function RouteComponent() {
   const { data: bookings = [], isLoading } = useQuery({
     ...bookingsQuery,
-    select: (data): Booking[] => data.filter((d): d is Booking => "dentistProfile" in d),
+    select: (data): Booking[] =>
+      data.filter((d): d is Booking => "dentistProfile" in d),
   });
   const cancelMutation = useUpdateStatus();
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 space-y-5">
+    <div className="w-full max-w-5xl mx-auto px-4 py-10 space-y-5">
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Link
@@ -106,19 +112,25 @@ function RouteComponent() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 shrink-0">
-                      <AvatarImage src={b.dentistProfile.user.image ?? undefined} />
+                      <AvatarImage
+                        src={b.dentistProfile.user.image ?? undefined}
+                      />
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                         {initials(b.dentistProfile.user.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold text-sm">Dr. {b.dentistProfile.user.name}</p>
+                      <p className="font-semibold text-sm">
+                        Dr. {b.dentistProfile.user.name}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {b.dentistProfile.clinicName} · {b.dentistProfile.city}
                       </p>
                     </div>
                   </div>
-                  <Badge variant={STATUS_VARIANTS[b.status]}>{STATUS_LABELS[b.status]}</Badge>
+                  <Badge variant={STATUS_VARIANTS[b.status]}>
+                    {STATUS_LABELS[b.status]}
+                  </Badge>
                 </div>
               </CardHeader>
 
@@ -129,7 +141,8 @@ function RouteComponent() {
                   <CalendarDays className="w-4 h-4 shrink-0" />
                   <span>
                     Requested: {formatDate(b.requestedDate)}
-                    {b.confirmedDate && ` · Confirmed: ${formatDate(b.confirmedDate)}`}
+                    {b.confirmedDate &&
+                      ` · Confirmed: ${formatDate(b.confirmedDate)}`}
                   </span>
                 </div>
 
@@ -165,7 +178,9 @@ function RouteComponent() {
                 )}
 
                 {b.touristNotes && (
-                  <p className="text-sm text-muted-foreground italic">"{b.touristNotes}"</p>
+                  <p className="text-sm text-muted-foreground italic">
+                    "{b.touristNotes}"
+                  </p>
                 )}
 
                 {b.dentistNotes && (
@@ -181,7 +196,12 @@ function RouteComponent() {
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
-                      onClick={() => cancelMutation.mutate({ id: b.id, body: { status: "cancelled" } })}
+                      onClick={() =>
+                        cancelMutation.mutate({
+                          id: b.id,
+                          body: { status: "cancelled" },
+                        })
+                      }
                       disabled={cancelMutation.isPending}
                     >
                       <X className="w-3.5 h-3.5" />

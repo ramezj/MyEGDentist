@@ -42,12 +42,19 @@ function Home() {
 
   return (
     <main>
-      <section className="py-16 px-4 text-center border-b bg-muted/30">
-        <div className="max-w-5xl mx-auto lg:px-4">
-          <h1 className="text-4xl font-bold tracking-tight mb-3">
+      <section className="relative py-16 px-4 text-center border-b overflow-hidden">
+        <img
+          src="/pyramids.jpg"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover blur-sm scale-105"
+        />
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="relative max-w-5xl mx-auto lg:px-4">
+          <h1 className="text-4xl font-bold tracking-tight mb-3 text-white">
             Find Your Dentist in Egypt
           </h1>
-          <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+          <p className="text-white/70 text-lg mb-8 max-w-md mx-auto">
             Quality dental care for international patients. Browse verified
             clinics across Egypt.
           </p>
@@ -63,7 +70,7 @@ function Home() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  className="pl-9 bg-background"
+                  className="pl-9 bg-background border-none"
                   placeholder="Search name, clinic, specialty…"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
@@ -74,7 +81,7 @@ function Home() {
 
             <div className="flex gap-2">
               <Select value={city} onValueChange={setCity}>
-                <SelectTrigger className="flex-1 bg-background">
+                <SelectTrigger className="flex-1 bg-background border-none">
                   <SelectValue placeholder="All cities" />
                 </SelectTrigger>
                 <SelectContent>
@@ -88,7 +95,7 @@ function Home() {
               </Select>
 
               <Select value={specialty} onValueChange={setSpecialty}>
-                <SelectTrigger className="flex-1 bg-background">
+                <SelectTrigger className="flex-1 bg-background border-none">
                   <SelectValue placeholder="All specialties" />
                 </SelectTrigger>
                 <SelectContent>
@@ -105,7 +112,7 @@ function Home() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-4 py-8">
+      <section className="w-full max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-4">
           {!isLoading && (
             <p className="text-sm text-muted-foreground">
@@ -119,7 +126,6 @@ function Home() {
           {hasFilters && (
             <Button
               variant="ghost"
-              size="sm"
               onClick={clearFilters}
               className="gap-1 text-muted-foreground"
             >

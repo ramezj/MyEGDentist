@@ -28,21 +28,21 @@ export function Navbar() {
           {user ? (
             <>
               {user.type === "dentist" && (
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" asChild>
                   <Link to="/dentist">Dashboard</Link>
                 </Button>
               )}
               {user.type === "tourist" && (
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" asChild>
                   <Link to="/bookings">My Bookings</Link>
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={signOut}>
+              <Button variant="outline" onClick={signOut}>
                 Sign out
               </Button>
             </>
           ) : (
-            <Button variant="default" size="sm" asChild>
+            <Button variant="default" asChild>
               <Link to="/auth">Sign in</Link>
             </Button>
           )}

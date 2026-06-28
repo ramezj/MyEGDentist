@@ -105,7 +105,7 @@ function RouteComponent() {
   const canBook = !user || user.type === "tourist";
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 space-y-5">
+    <div className="w-full max-w-5xl mx-auto px-4 py-10 space-y-5">
       <BookingSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
