@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as HelloRouteImport } from './routes/hello'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DentistRouteRouteImport } from './routes/dentist/route'
@@ -22,6 +23,11 @@ import { Route as DentistAppointmentsRouteImport } from './routes/dentist/appoin
 import { Route as marketingBookingsRouteImport } from './routes/(marketing)/bookings'
 import { Route as marketingDentistsIdRouteImport } from './routes/(marketing)/dentists.$id'
 
+const HelloRoute = HelloRouteImport.update({
+  id: '/hello',
+  path: '/hello',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HealthRoute = HealthRouteImport.update({
   id: '/health',
   path: '/health',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/dentist': typeof DentistRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/health': typeof HealthRoute
+  '/hello': typeof HelloRoute
   '/bookings': typeof marketingBookingsRoute
   '/dentist/appointments': typeof DentistAppointmentsRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/health': typeof HealthRoute
+  '/hello': typeof HelloRoute
   '/bookings': typeof marketingBookingsRoute
   '/dentist/appointments': typeof DentistAppointmentsRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/dentist': typeof DentistRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/health': typeof HealthRoute
+  '/hello': typeof HelloRoute
   '/(marketing)/bookings': typeof marketingBookingsRoute
   '/dentist/appointments': typeof DentistAppointmentsRoute
   '/dentist/onboarding': typeof DentistOnboardingRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/dentist'
     | '/auth'
     | '/health'
+    | '/hello'
     | '/bookings'
     | '/dentist/appointments'
     | '/dentist/onboarding'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/health'
+    | '/hello'
     | '/bookings'
     | '/dentist/appointments'
     | '/dentist/onboarding'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/dentist'
     | '/auth'
     | '/health'
+    | '/hello'
     | '/(marketing)/bookings'
     | '/dentist/appointments'
     | '/dentist/onboarding'
@@ -169,10 +181,18 @@ export interface RootRouteChildren {
   DentistRouteRoute: typeof DentistRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   HealthRoute: typeof HealthRoute
+  HelloRoute: typeof HelloRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/hello': {
+      id: '/hello'
+      path: '/hello'
+      fullPath: '/hello'
+      preLoaderRoute: typeof HelloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/health': {
       id: '/health'
       path: '/health'
@@ -301,6 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   DentistRouteRoute: DentistRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   HealthRoute: HealthRoute,
+  HelloRoute: HelloRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
